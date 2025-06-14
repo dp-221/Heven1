@@ -4,8 +4,8 @@ import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const Cart: React.FC = () => {
-  const { state, updateQuantity, removeFromCart } = useCart();
-  const { items, total } = state;
+  const { items, updateQuantity, removeFromCart, getTotal } = useCart();
+  const total = getTotal();
 
   if (items.length === 0) {
     return (
