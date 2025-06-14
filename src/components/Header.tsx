@@ -8,13 +8,13 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { getItemCount } = useCart();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const itemCount = getItemCount();
 
   const handleAuthClick = () => {
     if (user) {
-      logout();
+      signOut();
     } else {
       navigate('/auth');
     }
