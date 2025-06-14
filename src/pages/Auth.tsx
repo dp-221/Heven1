@@ -14,8 +14,9 @@ const Auth: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { signIn, signUp, isLoading } = useAuth();
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,27 +64,31 @@ const Auth: React.FC = () => {
 
     if (!validateForm()) return;
 
+    setIsLoading(true);
+
     try {
       console.log('Attempting auth with data:', formData);
 
-      let success = false;
+      let result;
 
       if (isLogin) {
-        success = await signIn(formData.email, formData.password);
+        result = await signIn(formData.email, formData.password);
       } else {
-        success = await signUp(formData.name, formData.email, formData.password);
+        result = await signUp(formData.email, formData.password, formData.name);
       }
 
-      console.log('Auth success:', success);
+      console.log('Auth result:', result);
 
-      if (success) {
-        navigate('/');
+      if (result.error) {
+        setFormError(result.error.message || 'Authentication failed. Please try again.');
       } else {
-        setFormError('Authentication failed. Please try again.');
+        navigate('/');
       }
     } catch (error) {
       console.error('Auth error:', error);
       setFormError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
