@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Filter, Grid, List } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { products } from '../data/products';
+import { useProducts } from '../hooks/useProducts';
 
 const Products: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,7 +21,7 @@ const Products: React.FC = () => {
   ];
 
   const filteredProducts = useMemo(() => {
-    let filtered = products.filter(product => {
+    let filtered = Products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           product.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = !selectedCategory || product.category === selectedCategory;
