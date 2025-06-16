@@ -12,11 +12,26 @@ import {
   ToggleLeft,
   ToggleRight
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
-import { Coupon } from '../../types';
+import { useCoupons } from '../../hooks/useCoupons';
+
+interface Coupon {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  min_order_value: number;
+  max_discount: number | null;
+  usage_limit: number | null;
+  used_count: number;
+  is_active: boolean;
+  expires_at: string | null;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const CouponManagement: React.FC = () => {
-  const { coupons, createCoupon, updateCoupon, deleteCoupon } = useAdmin();
+  const { coupons, loading, error, createCoupon, updateCoupon, deleteCoupon } = useCoupons();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -31,12 +46,12 @@ const CouponManagement: React.FC = () => {
 
   const filteredCoupons = coupons.filter(coupon => {
     const matchesSearch = coupon.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         coupon.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         (coupon.description && coupon.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const now = new Date();
-    const isExpired = coupon.expiryDate < now;
+    const isExpired = coupon.expires_at && new Date(coupon.expires_at) < now;
     const matchesStatus = !statusFilter || 
-                         (statusFilter === 'active' && coupon.isActive && !isExpired) ||
-                         (statusFilter === 'inactive' && !coupon.isActive) ||
+                         (statusFilter === 'active' && coupon.is_active && !isExpired) ||
+                         (statusFilter === 'inactive' && !coupon.is_active) ||
                          (statusFilter === 'expired' && isExpired);
     
     return matchesSearch && matchesStatus;
@@ -45,17 +60,17 @@ const CouponManagement: React.FC = () => {
   const CouponModal: React.FC<{
     coupon?: Coupon;
     onClose: () => void;
-    onSave: (coupon: Omit<Coupon, 'id' | 'createdAt' | 'usedCount'>) => void;
+    onSave: (coupon: any) => void;
   }> = ({ coupon, onClose, onSave }) => {
     const [formData, setFormData] = useState({
       code: coupon?.code || '',
       type: coupon?.type || 'percentage' as 'percentage' | 'fixed',
       value: coupon?.value || 0,
-      minOrderValue: coupon?.minOrderValue || 0,
-      maxDiscount: coupon?.maxDiscount || 0,
-      usageLimit: coupon?.usageLimit || 100,
-      expiryDate: coupon?.expiryDate ? coupon.expiryDate.toISOString().split('T')[0] : '',
-      isActive: coupon?.isActive ?? true,
+      min_order_value: coupon?.min_order_value || 0,
+      max_discount: coupon?.max_discount || 0,
+      usage_limit: coupon?.usage_limit || 100,
+      expires_at: coupon?.expires_at ? coupon.expires_at.split('T')[0] : '',
+      is_active: coupon?.is_active ?? true,
       description: coupon?.description || '',
     });
 
@@ -63,7 +78,7 @@ const CouponManagement: React.FC = () => {
       e.preventDefault();
       onSave({
         ...formData,
-        expiryDate: new Date(formData.expiryDate),
+        expires_at: formData.expires_at ? new Date(formData.expires_at).toISOString() : null,
       });
       onClose();
     };
@@ -128,8 +143,8 @@ const CouponManagement: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  value={formData.minOrderValue}
-                  onChange={(e) => setFormData({...formData, minOrderValue: Number(e.target.value)})}
+                  value={formData.min_order_value}
+                  onChange={(e) => setFormData({...formData, min_order_value: Number(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                   min="0"
                   required
@@ -145,8 +160,8 @@ const CouponManagement: React.FC = () => {
                   </label>
                   <input
                     type="number"
-                    value={formData.maxDiscount}
-                    onChange={(e) => setFormData({...formData, maxDiscount: Number(e.target.value)})}
+                    value={formData.max_discount}
+                    onChange={(e) => setFormData({...formData, max_discount: Number(e.target.value)})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                     min="0"
                   />
@@ -159,8 +174,8 @@ const CouponManagement: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  value={formData.usageLimit}
-                  onChange={(e) => setFormData({...formData, usageLimit: Number(e.target.value)})}
+                  value={formData.usage_limit}
+                  onChange={(e) => setFormData({...formData, usage_limit: Number(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                   min="1"
                   required
@@ -174,8 +189,8 @@ const CouponManagement: React.FC = () => {
               </label>
               <input
                 type="date"
-                value={formData.expiryDate}
-                onChange={(e) => setFormData({...formData, expiryDate: e.target.value})}
+                value={formData.expires_at}
+                onChange={(e) => setFormData({...formData, expires_at: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                 min={new Date().toISOString().split('T')[0]}
                 required
@@ -199,12 +214,12 @@ const CouponManagement: React.FC = () => {
             <div className="flex items-center">
               <input
                 type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                id="is_active"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
                 className="mr-2"
               />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+              <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
                 Active Coupon
               </label>
             </div>
@@ -232,21 +247,38 @@ const CouponManagement: React.FC = () => {
 
   const getStatusColor = (coupon: Coupon) => {
     const now = new Date();
-    const isExpired = coupon.expiryDate < now;
+    const isExpired = coupon.expires_at && new Date(coupon.expires_at) < now;
     
     if (isExpired) return 'bg-red-100 text-red-800';
-    if (!coupon.isActive) return 'bg-gray-100 text-gray-800';
+    if (!coupon.is_active) return 'bg-gray-100 text-gray-800';
     return 'bg-green-100 text-green-800';
   };
 
   const getStatusText = (coupon: Coupon) => {
     const now = new Date();
-    const isExpired = coupon.expiryDate < now;
+    const isExpired = coupon.expires_at && new Date(coupon.expires_at) < now;
     
     if (isExpired) return 'Expired';
-    if (!coupon.isActive) return 'Inactive';
+    if (!coupon.is_active) return 'Inactive';
     return 'Active';
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading coupons</h3>
+        <p className="text-gray-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -280,7 +312,7 @@ const CouponManagement: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Active Coupons</p>
               <p className="text-2xl font-bold text-gray-900">
-                {coupons.filter(c => c.isActive && c.expiryDate > new Date()).length}
+                {coupons.filter(c => c.is_active && (!c.expires_at || new Date(c.expires_at) > new Date())).length}
               </p>
             </div>
             <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
@@ -294,7 +326,7 @@ const CouponManagement: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Usage</p>
               <p className="text-2xl font-bold text-gray-900">
-                {coupons.reduce((sum, c) => sum + c.usedCount, 0)}
+                {coupons.reduce((sum, c) => sum + c.used_count, 0)}
               </p>
             </div>
             <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
@@ -308,7 +340,7 @@ const CouponManagement: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Expired</p>
               <p className="text-2xl font-bold text-gray-900">
-                {coupons.filter(c => c.expiryDate < new Date()).length}
+                {coupons.filter(c => c.expires_at && new Date(c.expires_at) < new Date()).length}
               </p>
             </div>
             <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
@@ -406,9 +438,9 @@ const CouponManagement: React.FC = () => {
                         <DollarSign size={14} className="mr-1 text-gray-400" />
                       )}
                       {coupon.type === 'percentage' ? `${coupon.value}%` : `₹${coupon.value}`}
-                      {coupon.type === 'percentage' && coupon.maxDiscount && (
+                      {coupon.type === 'percentage' && coupon.max_discount && (
                         <span className="text-xs text-gray-500 ml-1">
-                          (max ₹{coupon.maxDiscount})
+                          (max ₹{coupon.max_discount})
                         </span>
                       )}
                     </div>
@@ -418,19 +450,19 @@ const CouponManagement: React.FC = () => {
                       <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
                         <div 
                           className="bg-blue-600 h-2 rounded-full" 
-                          style={{ width: `${(coupon.usedCount / coupon.usageLimit) * 100}%` }}
+                          style={{ width: `${coupon.usage_limit ? (coupon.used_count / coupon.usage_limit) * 100 : 0}%` }}
                         ></div>
                       </div>
                       <span className="text-xs">
-                        {coupon.usedCount}/{coupon.usageLimit}
+                        {coupon.used_count}/{coupon.usage_limit || '∞'}
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₹{coupon.minOrderValue}
+                    ₹{coupon.min_order_value}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {coupon.expiryDate.toLocaleDateString()}
+                    {coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString() : 'No expiry'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(coupon)}`}>
@@ -446,10 +478,10 @@ const CouponManagement: React.FC = () => {
                         <Edit size={16} />
                       </button>
                       <button
-                        onClick={() => updateCoupon(coupon.id, { isActive: !coupon.isActive })}
+                        onClick={() => updateCoupon(coupon.id, { is_active: !coupon.is_active })}
                         className="text-blue-600 hover:text-blue-800"
                       >
-                        {coupon.isActive ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                        {coupon.is_active ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
                       </button>
                       <button
                         onClick={() => {

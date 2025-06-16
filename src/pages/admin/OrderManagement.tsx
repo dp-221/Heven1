@@ -9,15 +9,14 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
-import { Order } from '../../types';
+import { useOrders } from '../../hooks/useOrders';
 
 const OrderManagement: React.FC = () => {
-  const { orders, updateOrderStatus } = useAdmin();
+  const { orders, loading, error, updateOrderStatus } = useOrders(true); // Admin view
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   const statusOptions = [
     { value: '', label: 'All Status' },
@@ -29,15 +28,15 @@ const OrderManagement: React.FC = () => {
   ];
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.shippingAddress.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.shipping_address?.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || order.status === statusFilter;
-    const matchesDate = !dateFilter || order.createdAt.toDateString().includes(dateFilter);
+    const matchesDate = !dateFilter || order.created_at.includes(dateFilter);
     
     return matchesSearch && matchesStatus && matchesDate;
   });
 
-  const getStatusIcon = (status: Order['status']) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
         return <Package className="text-yellow-500" size={16} />;
@@ -54,7 +53,7 @@ const OrderManagement: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: Order['status']) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
@@ -72,9 +71,9 @@ const OrderManagement: React.FC = () => {
   };
 
   const OrderDetailModal: React.FC<{
-    order: Order;
+    order: any;
     onClose: () => void;
-    onUpdateStatus: (orderId: string, status: Order['status']) => void;
+    onUpdateStatus: (orderId: string, status: any) => void;
   }> = ({ order, onClose, onUpdateStatus }) => {
     const [newStatus, setNewStatus] = useState(order.status);
 
@@ -87,7 +86,7 @@ const OrderManagement: React.FC = () => {
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold">Order Details - {order.id}</h2>
+            <h2 className="text-xl font-bold">Order Details - {order.order_number}</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700"
@@ -103,12 +102,12 @@ const OrderManagement: React.FC = () => {
                 <h3 className="font-semibold mb-2">Order Information</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Order ID:</span>
-                    <span className="font-medium">{order.id}</span>
+                    <span className="text-gray-600">Order Number:</span>
+                    <span className="font-medium">{order.order_number}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Date:</span>
-                    <span>{order.createdAt.toLocaleDateString()}</span>
+                    <span>{new Date(order.created_at).toLocaleDateString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Status:</span>
@@ -118,27 +117,29 @@ const OrderManagement: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Payment Method:</span>
-                    <span>{order.paymentMethod}</span>
+                    <span>{order.payment_method}</span>
                   </div>
-                  {order.trackingNumber && (
+                  {order.tracking_number && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tracking:</span>
-                      <span className="font-medium">{order.trackingNumber}</span>
+                      <span className="font-medium">{order.tracking_number}</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Shipping Address */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Shipping Address</h3>
-                <div className="text-sm">
-                  <p className="font-medium">{order.shippingAddress.name}</p>
-                  <p>{order.shippingAddress.street}</p>
-                  <p>{order.shippingAddress.city}, {order.shippingAddress.state}</p>
-                  <p>{order.shippingAddress.zipCode}</p>
+              {order.shipping_address && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2">Shipping Address</h3>
+                  <div className="text-sm">
+                    <p className="font-medium">{order.shipping_address.name}</p>
+                    <p>{order.shipping_address.street}</p>
+                    <p>{order.shipping_address.city}, {order.shipping_address.state}</p>
+                    <p>{order.shipping_address.zip_code}</p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Status Update */}
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -146,7 +147,7 @@ const OrderManagement: React.FC = () => {
                 <div className="flex space-x-3">
                   <select
                     value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value as Order['status'])}
+                    onChange={(e) => setNewStatus(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                   >
                     {statusOptions.slice(1).map(option => (
@@ -169,32 +170,54 @@ const OrderManagement: React.FC = () => {
             <div>
               <h3 className="font-semibold mb-4">Order Items</h3>
               <div className="space-y-4">
-                {order.items.map((item, index) => (
+                {order.order_items.map((item: any, index: number) => (
                   <div key={index} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
                     <img
-                      src={item.product.image}
+                      src={item.product.image_url}
                       alt={item.product.name}
                       className="w-16 h-16 rounded-lg object-cover"
                     />
                     <div className="flex-1">
                       <h4 className="font-medium">{item.product.name}</h4>
+                      {item.variant && (
+                        <p className="text-sm text-gray-600">
+                          Size: {item.variant.size} | Color: {item.variant.color}
+                        </p>
+                      )}
                       <p className="text-sm text-gray-600">
-                        Size: {item.size} | Color: {item.color}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Qty: {item.quantity} × ₹{item.product.price}
+                        Qty: {item.quantity} × ₹{item.unit_price}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">₹{item.product.price * item.quantity}</p>
+                      <p className="font-medium">₹{item.total_price}</p>
                     </div>
                   </div>
                 ))}
                 
                 <div className="border-t pt-4">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total:</span>
-                    <span>₹{order.total}</span>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Subtotal:</span>
+                      <span>₹{order.subtotal}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tax:</span>
+                      <span>₹{order.tax_amount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Shipping:</span>
+                      <span>₹{order.shipping_amount}</span>
+                    </div>
+                    {order.discount_amount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Discount:</span>
+                        <span>-₹{order.discount_amount}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-lg font-bold border-t pt-2">
+                      <span>Total:</span>
+                      <span>₹{order.total_amount}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -204,6 +227,23 @@ const OrderManagement: React.FC = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading orders</h3>
+        <p className="text-gray-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -270,7 +310,7 @@ const OrderManagement: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order ID
+                  Order Number
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Customer
@@ -296,16 +336,16 @@ const OrderManagement: React.FC = () => {
               {filteredOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order.id}
+                    {order.order_number}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {order.shippingAddress.name}
+                    {order.shipping_address?.name || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                    {order.order_items.length} item{order.order_items.length !== 1 ? 's' : ''}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₹{order.total}
+                    ₹{order.total_amount}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
@@ -316,7 +356,7 @@ const OrderManagement: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.createdAt.toLocaleDateString()}
+                    {new Date(order.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button

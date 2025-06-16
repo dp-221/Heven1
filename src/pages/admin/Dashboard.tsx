@@ -8,11 +8,11 @@ import {
   Package,
   Eye
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
 import { Link } from 'react-router-dom';
+import { useDashboard } from '../../hooks/useDashboard';
 
 const Dashboard: React.FC = () => {
-  const { dashboardStats } = useAdmin();
+  const { stats, loading, error } = useDashboard();
 
   const StatCard: React.FC<{
     title: string;
@@ -38,12 +38,37 @@ const Dashboard: React.FC = () => {
           <TrendingDown className="text-red-500 mr-1" size={16} />
         )}
         <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {change >= 0 ? '+' : ''}{change}%
+          {change >= 0 ? '+' : ''}{change.toFixed(1)}%
         </span>
         <span className="text-sm text-gray-500 ml-1">from last month</span>
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading dashboard</h3>
+        <p className="text-gray-600">{error}</p>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium text-gray-900">No data available</h3>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -58,28 +83,28 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Revenue"
-          value={`₹${dashboardStats.totalRevenue.toLocaleString()}`}
-          change={dashboardStats.revenueGrowth}
+          value={`₹${stats.totalRevenue.toLocaleString()}`}
+          change={stats.revenueGrowth}
           icon={DollarSign}
           color="bg-green-500"
         />
         <StatCard
           title="Total Orders"
-          value={dashboardStats.totalOrders.toLocaleString()}
-          change={dashboardStats.ordersGrowth}
+          value={stats.totalOrders.toLocaleString()}
+          change={stats.ordersGrowth}
           icon={ShoppingCart}
           color="bg-blue-500"
         />
         <StatCard
           title="Total Users"
-          value={dashboardStats.totalUsers.toLocaleString()}
-          change={dashboardStats.usersGrowth}
+          value={stats.totalUsers.toLocaleString()}
+          change={stats.usersGrowth}
           icon={Users}
           color="bg-purple-500"
         />
         <StatCard
           title="Total Products"
-          value={dashboardStats.totalProducts}
+          value={stats.totalProducts}
           change={0}
           icon={Package}
           color="bg-orange-500"
@@ -91,7 +116,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Sales Overview</h3>
           <div className="space-y-4">
-            {dashboardStats.salesData.slice(-7).map((data, index) => (
+            {stats.salesData.slice(-7).map((data, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-3 h-3 bg-black rounded-full"></div>
@@ -116,10 +141,10 @@ const Dashboard: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Products</h3>
           <div className="space-y-4">
-            {dashboardStats.topProducts.map((item, index) => (
+            {stats.topProducts.map((item, index) => (
               <div key={index} className="flex items-center space-x-4">
                 <img
-                  src={item.product.image}
+                  src={item.product.image_url}
                   alt={item.product.name}
                   className="w-12 h-12 rounded-lg object-cover"
                 />
@@ -178,16 +203,16 @@ const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {dashboardStats.recentOrders.map((order) => (
+              {stats.recentOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order.id}
+                    {order.order_number}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {order.shippingAddress.name}
+                    {order.customer_name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₹{order.total}
+                    ₹{order.total_amount.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -201,7 +226,7 @@ const Dashboard: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.createdAt.toLocaleDateString()}
+                    {new Date(order.created_at).toLocaleDateString()}
                   </td>
                 </tr>
               ))}

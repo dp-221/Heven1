@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Filter, Grid, List } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { products } from '../data/products';
+import { useProducts } from '../hooks/useProducts';
 
 const Products: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,6 +9,12 @@ const Products: React.FC = () => {
   const [sortBy, setSortBy] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const { products, loading, error } = useProducts({
+    search: searchTerm,
+    category: selectedCategory,
+    priceRange,
+  });
 
   const categories = ['Clothing', 'Footwear', 'Accessories'];
   const sortOptions = [
@@ -19,35 +25,47 @@ const Products: React.FC = () => {
     { value: 'newest', label: 'Newest First' },
   ];
 
-  const filteredProducts = useMemo(() => {
-    let filtered = products.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = !selectedCategory || product.category === selectedCategory;
-      const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
-      
-      return matchesSearch && matchesCategory && matchesPrice;
-    });
+  const sortedProducts = useMemo(() => {
+    let sorted = [...products];
 
     // Sort products
     switch (sortBy) {
       case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
+        sorted.sort((a, b) => a.price - b.price);
         break;
       case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
+        sorted.sort((a, b) => b.price - a.price);
         break;
       case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
+        sorted.sort((a, b) => b.rating - a.rating);
         break;
       case 'newest':
         // Assuming newer products have higher IDs
-        filtered.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+        sorted.sort((a, b) => b.id.localeCompare(a.id));
         break;
     }
 
-    return filtered;
-  }, [searchTerm, selectedCategory, sortBy, priceRange]);
+    return sorted;
+  }, [products, sortBy]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Error loading products</h2>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -170,13 +188,13 @@ const Products: React.FC = () => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-6">
               <p className="text-gray-600">
-                Showing {filteredProducts.length} of {products.length} products
+                Showing {sortedProducts.length} products
               </p>
             </div>
 
-            {filteredProducts.length > 0 ? (
+            {sortedProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map((product) => (
+                {sortedProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>

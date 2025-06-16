@@ -4,8 +4,16 @@ import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const Cart: React.FC = () => {
-  const { items, updateQuantity, removeFromCart, getTotal } = useCart();
+  const { items, loading, updateQuantity, removeFromCart, getTotal } = useCart();
   const total = getTotal();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -50,11 +58,11 @@ const Cart: React.FC = () => {
                   Cart Items ({items.length})
                 </h2>
                 <div className="space-y-6">
-                  {items.map((item, index) => (
-                    <div key={`${item.product.id}-${item.size}-${item.color}`} className="flex items-center space-x-4 pb-6 border-b border-gray-200 last:border-b-0">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex items-center space-x-4 pb-6 border-b border-gray-200 last:border-b-0">
                       <div className="flex-shrink-0 w-20 h-20 bg-gray-200 rounded-md overflow-hidden">
                         <img
-                          src={item.product.image}
+                          src={item.product.image_url}
                           alt={item.product.name}
                           className="w-full h-full object-cover object-center"
                         />
@@ -65,7 +73,7 @@ const Cart: React.FC = () => {
                           {item.product.name}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          Size: {item.size} | Color: {item.color}
+                          Size: {item.variant.size} | Color: {item.variant.color}
                         </p>
                         <p className="text-sm font-medium text-gray-900">
                           ₹{item.product.price}
@@ -74,7 +82,7 @@ const Cart: React.FC = () => {
 
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => updateQuantity(item.product.id, item.size, item.color, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           className="p-1 border border-gray-300 rounded-md hover:bg-gray-50"
                         >
                           <Minus size={14} />
@@ -83,7 +91,7 @@ const Cart: React.FC = () => {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.product.id, item.size, item.color, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           className="p-1 border border-gray-300 rounded-md hover:bg-gray-50"
                         >
                           <Plus size={14} />
@@ -95,7 +103,7 @@ const Cart: React.FC = () => {
                           ₹{item.product.price * item.quantity}
                         </p>
                         <button
-                          onClick={() => removeFromCart(item.product.id, item.size, item.color)}
+                          onClick={() => removeFromCart(item.id)}
                           className="mt-1 text-red-500 hover:text-red-700 transition-colors duration-200"
                         >
                           <Trash2 size={16} />
@@ -139,9 +147,12 @@ const Cart: React.FC = () => {
               </div>
 
               <div className="mt-6 space-y-3">
-                <button className="w-full bg-black text-white py-3 px-4 rounded-md font-medium hover:bg-gray-800 transition-colors duration-200">
+                <Link
+                  to="/checkout"
+                  className="w-full bg-black text-white py-3 px-4 rounded-md font-medium hover:bg-gray-800 transition-colors duration-200 block text-center"
+                >
                   Proceed to Checkout
-                </button>
+                </Link>
                 <div className="text-center">
                   <p className="text-xs text-gray-500">
                     Secure checkout powered by industry-leading encryption

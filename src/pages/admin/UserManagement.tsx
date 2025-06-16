@@ -11,11 +11,22 @@ import {
   Phone,
   Calendar
 } from 'lucide-react';
-import { useAdmin } from '../../context/AdminContext';
-import { User } from '../../types';
+import { useUsers } from '../../hooks/useUsers';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  is_blocked: boolean;
+  created_at: string;
+  last_login: string | null;
+  total_orders: number;
+  total_spent: number;
+}
 
 const UserManagement: React.FC = () => {
-  const { users, toggleUserBlock } = useAdmin();
+  const { users, loading, error, toggleUserBlock } = useUsers();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -30,8 +41,8 @@ const UserManagement: React.FC = () => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || 
-                         (statusFilter === 'active' && !user.isBlocked) ||
-                         (statusFilter === 'blocked' && user.isBlocked);
+                         (statusFilter === 'active' && !user.is_blocked) ||
+                         (statusFilter === 'blocked' && user.is_blocked);
     
     return matchesSearch && matchesStatus;
   });
@@ -74,9 +85,9 @@ const UserManagement: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Status</label>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.isBlocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    user.is_blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                   }`}>
-                    {user.isBlocked ? 'Blocked' : 'Active'}
+                    {user.is_blocked ? 'Blocked' : 'Active'}
                   </span>
                 </div>
               </div>
@@ -87,22 +98,22 @@ const UserManagement: React.FC = () => {
               <h3 className="font-semibold mb-4">Account Statistics</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900">{user.totalOrders}</p>
+                  <p className="text-2xl font-bold text-gray-900">{user.total_orders}</p>
                   <p className="text-sm text-gray-600">Total Orders</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900">₹{user.totalSpent}</p>
+                  <p className="text-2xl font-bold text-gray-900">₹{user.total_spent.toLocaleString()}</p>
                   <p className="text-sm text-gray-600">Total Spent</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-gray-900">
-                    {user.totalOrders > 0 ? Math.round(user.totalSpent / user.totalOrders) : 0}
+                    {user.total_orders > 0 ? Math.round(user.total_spent / user.total_orders) : 0}
                   </p>
                   <p className="text-sm text-gray-600">Avg Order Value</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-gray-900">
-                    {user.lastLogin ? Math.floor((Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24)) : 'N/A'}
+                    {user.last_login ? Math.floor((Date.now() - new Date(user.last_login).getTime()) / (1000 * 60 * 60 * 24)) : 'N/A'}
                   </p>
                   <p className="text-sm text-gray-600">Days Since Login</p>
                 </div>
@@ -115,12 +126,12 @@ const UserManagement: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Member Since:</span>
-                  <span className="text-sm text-gray-900">{user.createdAt.toLocaleDateString()}</span>
+                  <span className="text-sm text-gray-900">{new Date(user.created_at).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Last Login:</span>
                   <span className="text-sm text-gray-900">
-                    {user.lastLogin ? user.lastLogin.toLocaleDateString() : 'Never'}
+                    {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
                   </span>
                 </div>
               </div>
@@ -140,12 +151,12 @@ const UserManagement: React.FC = () => {
                   onClose();
                 }}
                 className={`px-4 py-2 rounded-md text-white ${
-                  user.isBlocked 
+                  user.is_blocked 
                     ? 'bg-green-600 hover:bg-green-700' 
                     : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
-                {user.isBlocked ? 'Unblock User' : 'Block User'}
+                {user.is_blocked ? 'Unblock User' : 'Block User'}
               </button>
             </div>
           </div>
@@ -153,6 +164,23 @@ const UserManagement: React.FC = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading users</h3>
+        <p className="text-gray-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -185,7 +213,7 @@ const UserManagement: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Active Users</p>
               <p className="text-2xl font-bold text-gray-900">
-                {users.filter(u => !u.isBlocked).length}
+                {users.filter(u => !u.is_blocked).length}
               </p>
             </div>
             <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
@@ -199,7 +227,7 @@ const UserManagement: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Blocked Users</p>
               <p className="text-2xl font-bold text-gray-900">
-                {users.filter(u => u.isBlocked).length}
+                {users.filter(u => u.is_blocked).length}
               </p>
             </div>
             <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
@@ -216,7 +244,7 @@ const UserManagement: React.FC = () => {
                 {users.filter(u => {
                   const monthAgo = new Date();
                   monthAgo.setMonth(monthAgo.getMonth() - 1);
-                  return u.createdAt > monthAgo;
+                  return new Date(u.created_at) > monthAgo;
                 }).length}
               </p>
             </div>
@@ -309,7 +337,7 @@ const UserManagement: React.FC = () => {
                           {user.name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          Member since {user.createdAt.toLocaleDateString()}
+                          Member since {new Date(user.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -329,20 +357,20 @@ const UserManagement: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.totalOrders}
+                    {user.total_orders}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₹{user.totalSpent}
+                    ₹{user.total_spent.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.isBlocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                      user.is_blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                     }`}>
-                      {user.isBlocked ? 'Blocked' : 'Active'}
+                      {user.is_blocked ? 'Blocked' : 'Active'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.lastLogin ? user.lastLogin.toLocaleDateString() : 'Never'}
+                    {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
@@ -355,10 +383,10 @@ const UserManagement: React.FC = () => {
                       <button
                         onClick={() => toggleUserBlock(user.id)}
                         className={`${
-                          user.isBlocked ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'
+                          user.is_blocked ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'
                         }`}
                       >
-                        {user.isBlocked ? <CheckCircle size={16} /> : <Ban size={16} />}
+                        {user.is_blocked ? <CheckCircle size={16} /> : <Ban size={16} />}
                       </button>
                     </div>
                   </td>

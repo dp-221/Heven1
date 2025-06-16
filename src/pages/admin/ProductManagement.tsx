@@ -9,38 +9,38 @@ import {
   Upload,
   Download
 } from 'lucide-react';
-import { products } from '../../data/products';
-import { Product } from '../../types';
+import { useProducts } from '../../hooks/useProducts';
 
 const ProductManagement: React.FC = () => {
+  const { products, loading, error } = useProducts();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
 
   const categories = ['Clothing', 'Footwear', 'Accessories'];
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || product.category === selectedCategory;
+    const matchesCategory = !selectedCategory || product.category?.name === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   const ProductModal: React.FC<{
-    product?: Product;
+    product?: any;
     onClose: () => void;
-    onSave: (product: Partial<Product>) => void;
+    onSave: (product: any) => void;
   }> = ({ product, onClose, onSave }) => {
     const [formData, setFormData] = useState({
       name: product?.name || '',
       price: product?.price || 0,
-      originalPrice: product?.originalPrice || 0,
-      category: product?.category || '',
+      original_price: product?.original_price || 0,
+      category: product?.category?.name || '',
       description: product?.description || '',
-      stock: product?.stock || 0,
+      stock_quantity: product?.stock_quantity || 0,
       sku: product?.sku || '',
-      featured: product?.featured || false,
-      trending: product?.trending || false,
+      is_featured: product?.is_featured || false,
+      is_trending: product?.is_trending || false,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -105,8 +105,8 @@ const ProductManagement: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  value={formData.originalPrice}
-                  onChange={(e) => setFormData({...formData, originalPrice: Number(e.target.value)})}
+                  value={formData.original_price}
+                  onChange={(e) => setFormData({...formData, original_price: Number(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
@@ -117,8 +117,8 @@ const ProductManagement: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({...formData, stock: Number(e.target.value)})}
+                  value={formData.stock_quantity}
+                  onChange={(e) => setFormData({...formData, stock_quantity: Number(e.target.value)})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
                   required
                 />
@@ -159,8 +159,8 @@ const ProductManagement: React.FC = () => {
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={formData.featured}
-                  onChange={(e) => setFormData({...formData, featured: e.target.checked})}
+                  checked={formData.is_featured}
+                  onChange={(e) => setFormData({...formData, is_featured: e.target.checked})}
                   className="mr-2"
                 />
                 Featured Product
@@ -169,8 +169,8 @@ const ProductManagement: React.FC = () => {
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={formData.trending}
-                  onChange={(e) => setFormData({...formData, trending: e.target.checked})}
+                  checked={formData.is_trending}
+                  onChange={(e) => setFormData({...formData, is_trending: e.target.checked})}
                   className="mr-2"
                 />
                 Trending Product
@@ -197,6 +197,23 @@ const ProductManagement: React.FC = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-black"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading products</h3>
+        <p className="text-gray-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -283,7 +300,7 @@ const ProductManagement: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <img
-                        src={product.image}
+                        src={product.images[0]?.image_url || ''}
                         alt={product.name}
                         className="w-12 h-12 rounded-lg object-cover"
                       />
@@ -292,37 +309,37 @@ const ProductManagement: React.FC = () => {
                           {product.name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          SKU: {product.id}
+                          SKU: {product.sku}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {product.category}
+                    {product.category?.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div>₹{product.price}</div>
-                    {product.originalPrice && (
+                    {product.original_price && (
                       <div className="text-xs text-gray-500 line-through">
-                        ₹{product.originalPrice}
+                        ₹{product.original_price}
                       </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      product.inStock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      product.stock_quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {product.inStock ? 'In Stock' : 'Out of Stock'}
+                      {product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : 'Out of Stock'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex space-x-1">
-                      {product.featured && (
+                      {product.is_featured && (
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                           Featured
                         </span>
                       )}
-                      {product.trending && (
+                      {product.is_trending && (
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
                           Trending
                         </span>

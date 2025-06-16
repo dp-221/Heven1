@@ -1,23 +1,50 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Star } from 'lucide-react';
-import { Product } from '../types';
+import { useWishlist } from '../context/WishlistContext';
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  original_price: number | null;
+  rating: number;
+  review_count: number;
+  is_featured: boolean;
+  is_trending: boolean;
+  stock_quantity: number;
+  images: Array<{
+    image_url: string;
+  }>;
+}
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const discountPercentage = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const inWishlist = isInWishlist(product.id);
+
+  const discountPercentage = product.original_price
+    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
+
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (inWishlist) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product.id);
+    }
+  };
 
   return (
     <div className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
       <Link to={`/product/${product.id}`}>
         <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-200 relative">
           <img
-            src={product.image}
+            src={product.images[0]?.image_url || ''}
             alt={product.name}
             className="h-64 w-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
           />
@@ -26,7 +53,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               -{discountPercentage}%
             </div>
           )}
-          {product.trending && (
+          {product.is_trending && (
             <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
               Trending
             </div>
@@ -34,8 +61,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
       </Link>
 
-      <button className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-gray-50">
-        <Heart size={16} className="text-gray-600 hover:text-red-500" />
+      <button 
+        onClick={handleWishlistToggle}
+        className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-gray-50"
+      >
+        <Heart 
+          size={16} 
+          className={`${inWishlist ? 'text-red-500 fill-current' : 'text-gray-600'} hover:text-red-500`} 
+        />
       </button>
 
       <div className="p-4">
@@ -55,7 +88,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               />
             ))}
           </div>
-          <span className="text-xs text-gray-500 ml-1">({product.reviewCount})</span>
+          <span className="text-xs text-gray-500 ml-1">({product.review_count})</span>
         </div>
 
         <div className="flex items-center justify-between">
@@ -63,13 +96,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <span className="text-lg font-semibold text-gray-900">
               ₹{product.price}
             </span>
-            {product.originalPrice && (
+            {product.original_price && (
               <span className="text-sm text-gray-500 line-through">
-                ₹{product.originalPrice}
+                ₹{product.original_price}
               </span>
             )}
           </div>
-          {!product.inStock && (
+          {product.stock_quantity === 0 && (
             <span className="text-xs text-red-500 font-medium">Out of Stock</span>
           )}
         </div>
