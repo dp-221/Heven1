@@ -2,7 +2,7 @@ import { Product } from '../types';
 
 export const products: Product[] = [
   {
-    id: '1',
+    id: '245884c7-8d0e-4364-b2c7-dba42d50505d',
     name: 'Premium Cotton T-Shirt',
     price: 299,
     originalPrice: 399,
