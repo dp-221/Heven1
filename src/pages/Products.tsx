@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Filter, Grid, List } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { products } from '../data/products';
 import { useProducts } from '../hooks/useProducts';
 
 const Products: React.FC = () => {
