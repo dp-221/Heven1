@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { Heart, Star, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
+import { products } from '../data/products';
+
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
