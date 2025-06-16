@@ -20,7 +20,7 @@ const Products: React.FC = () => {
   ];
 
   const filteredProducts = useMemo(() => {
-    let filtered = Products.filter(product => {
+    let filtered = products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           product.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = !selectedCategory || product.category === selectedCategory;
