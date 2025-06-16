@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Filter, Grid, List } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { useProducts } from '../hooks/useProducts';
+import { products } from '../data/products';
 
 const Products: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
