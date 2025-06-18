@@ -44,7 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <Link to={`/product/${product.id}`}>
         <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-200 relative">
           <img
-            src={product.images[0]?.image_url || ''}
+            src={product.images[0]?.image_url || 'https://images.pexels.com/photos/769732/pexels-photo-769732.jpeg?auto=compress&cs=tinysrgb&w=500'}
             alt={product.name}
             className="h-64 w-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
           />

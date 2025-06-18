@@ -17,7 +17,6 @@ const AdminLogin: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -152,10 +151,10 @@ const AdminLogin: React.FC = () => {
             </div>
           </form>
 
-          <div className="mt-6 text-center text-xs text-gray-500">
-            <p>Demo Credentials:</p>
-            <p>Email: admin@heven.com</p>
-            <p>Password: admin123</p>
+          <div className="mt-6 text-center text-xs text-gray-500 bg-gray-50 p-4 rounded-md">
+            <p className="font-medium mb-2">Demo Admin Credentials:</p>
+            <p><strong>Email:</strong> admin@heven.com</p>
+            <p><strong>Password:</strong> admin123</p>
           </div>
         </div>
 

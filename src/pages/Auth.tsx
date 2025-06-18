@@ -25,7 +25,7 @@ const Auth: React.FC = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
-    setFormError(null); // Clear general form error
+    setFormError(null);
   };
 
   const validateForm = () => {
@@ -60,15 +60,13 @@ const Auth: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError(null); // Reset form error
+    setFormError(null);
 
     if (!validateForm()) return;
 
     setIsLoading(true);
 
     try {
-      console.log('Attempting auth with data:', formData);
-
       let result;
 
       if (isLogin) {
@@ -77,12 +75,16 @@ const Auth: React.FC = () => {
         result = await signUp(formData.email, formData.password, formData.name);
       }
 
-      console.log('Auth result:', result);
-
       if (result.error) {
         setFormError(result.error.message || 'Authentication failed. Please try again.');
       } else {
-        navigate('/');
+        if (!isLogin) {
+          setFormError('Account created successfully! Please sign in.');
+          setIsLogin(true);
+          setFormData({ ...formData, password: '', confirmPassword: '' });
+        } else {
+          navigate('/');
+        }
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -123,7 +125,13 @@ const Auth: React.FC = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {formError && (
-            <div className="mb-4 text-sm text-red-600 text-center">{formError}</div>
+            <div className={`mb-4 p-3 rounded-md ${
+              formError.includes('successfully') 
+                ? 'bg-green-50 border border-green-200 text-green-600' 
+                : 'bg-red-50 border border-red-200 text-red-600'
+            }`}>
+              <p className="text-sm">{formError}</p>
+            </div>
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
@@ -141,7 +149,7 @@ const Auth: React.FC = () => {
                   } rounded-md sm:text-sm focus:ring-black focus:border-black`}
                   placeholder="Enter your full name"
                 />
-                {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
               </div>
             )}
 
@@ -158,7 +166,7 @@ const Auth: React.FC = () => {
                 } rounded-md sm:text-sm focus:ring-black focus:border-black`}
                 placeholder="Enter your email"
               />
-              {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
 
             <div>
@@ -186,8 +194,8 @@ const Auth: React.FC = () => {
                     <Eye className="h-5 w-5 text-gray-400" />
                   )}
                 </button>
-                {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
               </div>
+              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
 
             {!isLogin && (
@@ -206,7 +214,7 @@ const Auth: React.FC = () => {
                   } rounded-md sm:text-sm focus:ring-black focus:border-black`}
                   placeholder="Confirm your password"
                 />
-                {errors.confirmPassword && <p className="text-sm text-red-600">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
               </div>
             )}
 
@@ -230,7 +238,7 @@ const Auth: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2 px-4 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-md focus:outline-none disabled:opacity-50"
+              className="w-full py-2 px-4 text-sm font-medium text-white bg-black hover:bg-gray-800 rounded-md focus:outline-none disabled:opacity-50 transition-colors duration-200"
             >
               {isLoading ? 'Please wait...' : (isLogin ? 'Sign in' : 'Sign up')}
             </button>
@@ -242,17 +250,19 @@ const Auth: React.FC = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white text-gray-500">Demo Accounts</span>
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm text-gray-500 hover:bg-gray-50">
-                Google
-              </button>
-              <button className="py-2 px-4 border border-gray-300 rounded-md bg-white text-sm text-gray-500 hover:bg-gray-50">
-                Facebook
-              </button>
+            <div className="mt-6 text-center text-xs text-gray-500 space-y-2">
+              <div>
+                <p className="font-medium">Customer Demo:</p>
+                <p>Email: customer@heven.com | Password: customer123</p>
+              </div>
+              <div>
+                <p className="font-medium">Admin Demo:</p>
+                <p>Email: admin@heven.com | Password: admin123</p>
+              </div>
             </div>
           </div>
         </div>

@@ -40,7 +40,7 @@ const Products: React.FC = () => {
         sorted.sort((a, b) => b.rating - a.rating);
         break;
       case 'newest':
-        // Assuming newer products have higher IDs
+        // Sort by created_at if available, otherwise by id
         sorted.sort((a, b) => b.id.localeCompare(a.id));
         break;
     }
